@@ -10,6 +10,7 @@ import com.kelompok11.notebookpbo.service.NoteManager;
 import com.kelompok11.notebookpbo.model.Note;
 import com.kelompok11.notebookpbo.model.ReminderTask; // Import dari reminder exception 
 import com.kelompok11.notebookpbo.utils.TxtExporter;
+import com.kelompok11.notebookpbo.model.Category;
 
 import java.util.Scanner;
 import java.time.LocalDateTime;
@@ -88,11 +89,26 @@ public class NotebookPBO { // Nama Class HARUS SAMA dengan Nama File
         System.out.print("Isi      : ");
         String content = scanner.nextLine();
         
-        System.out.print("Kategori : ");
-        String category = scanner.nextLine();
+        // --- MULAI PERUBAHAN INPUT KATEGORI ---
+        String category = null;
+        while (category == null) {
+            Category.tampilkanPilihan();
+            System.out.print("Pilih Nomor Kategori : ");
+            try {
+                int pilihan = Integer.parseInt(scanner.nextLine());
+                category = Category.getKategori(pilihan);
+                
+                if (category == null) {
+                    System.out.println("Nomor tidak valid! Pilih yang ada di list saja.");
+                }
+            } catch (NumberFormatException e) {
+                System.out.println("Masukkan Angka !");
+            }
+        }
+        System.out.println(">>> Kategori terpilih: " + category);
         
         // Deadline diset 15 detik dari sekarang buat ngetes fitur Reminder
-        System.out.println("(Deadline otomatis diset 1 Jam dari sekarang untuk testing Reminder)");
+        System.out.println("(Deadline otomatis diset 30 Menit dari sekarang untuk testing Reminder)");
         LocalDateTime deadline = LocalDateTime.now().plusMinutes(30); 
 
         noteManager.addNote(title, content, category, deadline);
@@ -135,47 +151,62 @@ public class NotebookPBO { // Nama Class HARUS SAMA dengan Nama File
     
     // --- FITUR UPDATE ---
     private static void menuUpdateNote() {
-        // reminder.pause();
-        if (satpam != null) satpam.pause(); 
-        System.out.println("\n--- Edit Catatan ---");
-        menuShowNotes(); // Tampilkan dulu biar tau ID-nya
+        // 1. Pause dulu
+        if (reminder != null) reminder.pause();
+        
+        System.out.println("\n---️ Edit Catatan ---");
+        menuShowNotes(); 
         
         System.out.print("Masukkan ID catatan yang mau diedit: ");
         try {
             int id = Integer.parseInt(scanner.nextLine());
             
-            // 1. CEK DULU! ADA GAK BARANGNYA?
-            // Kalau gak ada, dia bakal loncat ke 'catch (IllegalArgumentException)' di bawah
-            // Input judul dll di bawah ini GAK BAKAL DIJALANIN
+            // Cek ID (Bisa throw IllegalArgumentException)
             Note noteYangMauDiedit = noteManager.getNoteById(id); 
 
-            // 2. KALAU LOLOS (Ada), BARU MINTA DATA BARU
-            // (Tampilkan data lama biar user enak ngeditnya)
             System.out.println(">>> Mengedit Catatan: " + noteYangMauDiedit.getTitle());
             
-            // Minta data baru
             System.out.print("Judul Baru    : ");
             String title = scanner.nextLine();
             System.out.print("Isi Baru      : ");
             String content = scanner.nextLine();
-            System.out.print("Kategori Baru : ");
-            String category = scanner.nextLine();
+             // --- MULAI PERUBAHAN INPUT KATEGORI (EDIT) ---
+            String category = null;
+            while (category == null) {
+                System.out.println("\n[Ganti Kategori]");
+                Category.tampilkanPilihan();
+                System.out.print("Pilih Nomor Kategori Baru : ");
+                try {
+                    int pilihan = Integer.parseInt(scanner.nextLine());
+                    category = Category.getKategori(pilihan);
+                    
+                    if (category == null) System.out.println("⚠️ Nomor salah!");
+                } catch (NumberFormatException e) {
+                    System.out.println("⚠️ Masukkan Angka bukan yang lain !");
+                }
+            } 
             
-            // Deadline update manual (atau otomatis kayak tadi buat tes)
             LocalDateTime deadline = LocalDateTime.now().plusHours(24); 
             System.out.println("(Deadline direset jadi 24 jam dari sekarang)");
 
             noteManager.updateNote(id, title, content, category, deadline);
             
         } catch (NumberFormatException e) {
-            System.out.println(" ID harus berupa angka !");
+            System.out.println("ID harus berupa angka!");
+        } catch (IllegalArgumentException e) {
+            // INI YANG TADI HILANG DI MENU EDIT
+            System.out.println("❌ ERROR: " + e.getMessage());
+        } finally {
+            // 2. WAJIB RESUME (Pake finally biar mau error atau sukses, satpam tetep bangun)
+            if (reminder != null) reminder.resumeReminder();
         }
     }
 
     // --- FITUR DELETE ---
     private static void menuDeleteNote() {
-        reminder.pause();
-        System.out.println("\n---  Hapus Catatan ---");
+        if (reminder != null) reminder.pause();
+        
+        System.out.println("\n--- 🗑️ Hapus Catatan ---");
         menuShowNotes();
         
         System.out.print("Masukkan ID catatan yang mau dihapus: ");
@@ -194,10 +225,10 @@ public class NotebookPBO { // Nama Class HARUS SAMA dengan Nama File
         } catch (NumberFormatException e) {
             System.out.println("ID harus berupa angka!");
         } catch (IllegalArgumentException e) {
-            // 3. INI YANG AKAN MUNCUL KALAU ID GAK ADA
-            System.out.println("❌ ERROR: " + e.getMessage());
-            // User langsung balik ke menu utama, gak perlu capek ngetik
+            System.out.println("ERROR: " + e.getMessage());
+        } finally {
+            // 2. WAJIB RESUME DISINI JUGA
+            if (reminder != null) reminder.resumeReminder();
         }
     }
-    if (satpam != null) satpam.resumeReminder();
 }

@@ -23,7 +23,7 @@ public class ReminderTask extends Thread {
 
     @Override
     public void run() {
-        System.out.println(">>> [SYSTEM] Satpam Reminder Aktif di Background...");
+        System.out.println(">>> [SYSTEM] Reminder sedang diaktifkan di Background...");
         
         while (isRunning) {
             try {
