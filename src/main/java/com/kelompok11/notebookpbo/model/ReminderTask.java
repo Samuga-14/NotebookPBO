@@ -12,6 +12,7 @@ import java.util.List;
 public class ReminderTask extends Thread {
     private final NoteManager noteManager;
     private boolean isRunning = true;
+    private boolean isPaused = false;
     
     // Format tanggal biar enak dibaca
     private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm");
@@ -26,6 +27,10 @@ public class ReminderTask extends Thread {
         
         while (isRunning) {
             try {
+                if (isPaused) {
+                    Thread.sleep(1000); // Cek lagi 1 detik kemudian
+                    continue; // Skip kode di bawah, ulang loop dari atas
+                }
                 // 1. Ambil semua catatan terbaru dari database
                 List<Note> notes = noteManager.getNotes();
                 LocalDateTime now = LocalDateTime.now();
@@ -39,10 +44,10 @@ public class ReminderTask extends Thread {
                         // Jadi tugas tahun lalu gak bakal dimunculin notifnya.
                         if (n.getDeadline().isAfter(now.minusSeconds(10))) {
                             System.out.println("\n\n========================================");
-                            System.out.println("🔔 PENGINGAT TUGAS! WAKTU HABIS! 🔔");
+                            System.out.println("PENGINGAT TUGAS! WAKTU HABIS!");
                             System.out.println("Judul    : " + n.getTitle().toUpperCase());
                             System.out.println("Deadline : " + n.getDeadline().format(formatter));
-                            System.out.println("Segera kerjakan atau nilai lu C!");
+                            System.out.println("Segera Kerjakan tugas ini atau terima konsekuensi nya !");
                             System.out.println("========================================\n");
                             System.out.print("Pilih menu > "); // Biar kursor input rapi lagi
                         }
@@ -58,6 +63,15 @@ public class ReminderTask extends Thread {
             }
         }
     }
+//    Tambah Method Buat MainApp Nyuruh Diem/Jalan
+    public void pause() {
+        this.isPaused = true;
+    }
+
+    public void resumeReminder() {
+        this.isPaused = false;
+    }
+
     
     public void stopReminder() {
         this.isRunning = false;

@@ -31,5 +31,27 @@ public class NoteManager {
         return noteDAO.getAllNotes();
     }
     
-    // Nanti kita tambah method update/delete/export disini
+    // Nanti kita tambah method update/delete/export disini// Method buat Edit
+    public void updateNote(int id, String title, String content, String category, java.time.LocalDateTime deadline) {
+        Note note = new Note(title, content, category, deadline);
+        note.setId(id); // Penting! Kita harus kasih tau ID mana yang mau diedit
+        noteDAO.updateNote(note);
+    }
+
+    // Method buat Hapus
+    public void deleteNote(int id) {
+        noteDAO.deleteNote(id);
+    }
+    
+    // Method buat validasi ID ada atau nggak
+    public Note getNoteById(int id) {
+        Note note = noteDAO.getNoteById(id);
+        
+        // INI LOGIC THROW EXCEPTION-NYA
+        if (note == null) {
+            throw new IllegalArgumentException("ID " + id + " tidak ditemukan di database!");
+        }
+        
+        return note;
+    }
 }

@@ -110,18 +110,80 @@ public class DatabaseManager implements NoteDAO {
         return notes; // Balikin daftar catatan ke pemanggil
     }
 
-    @Override
+@Override
     public void updateNote(Note note) {
-         System.out.println("Simulasi: Update note...");
+        String sql = "UPDATE notes SET title = ?, content = ?, category = ?, deadline = ? WHERE id = ?";
+
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            pstmt.setString(1, note.getTitle());
+            pstmt.setString(2, note.getContent());
+            pstmt.setString(3, note.getCategory());
+            
+            if (note.getDeadline() != null) {
+                pstmt.setTimestamp(4, Timestamp.valueOf(note.getDeadline()));
+            } else {
+                pstmt.setTimestamp(4, null);
+            }
+            
+            pstmt.setInt(5, note.getId()); // WHERE id = ?
+
+            int rowsUpdated = pstmt.executeUpdate();
+            if (rowsUpdated > 0) {
+                System.out.println(">>> BERHASIL: Catatan ID " + note.getId() + " berhasil diupdate!");
+            } else {
+                System.out.println(">>> GAGAL: ID tidak ditemukan.");
+            }
+            
+        } catch (SQLException e) {
+            System.err.println(">>> ERROR UPDATE: " + e.getMessage());
+        }
     }
 
     @Override
     public void deleteNote(int id) {
-         System.out.println("Simulasi: Hapus note...");
+        String sql = "DELETE FROM notes WHERE id = ?";
+
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            pstmt.setInt(1, id);
+
+            int rowsDeleted = pstmt.executeUpdate();
+            if (rowsDeleted > 0) {
+                System.out.println(">>> BERHASIL: Catatan ID " + id + " berhasil dihapus!");
+            } else {
+                System.out.println(">>> GAGAL: ID tidak ditemukan.");
+            }
+            
+        } catch (SQLException e) {
+            System.err.println(">>> ERROR DELETE: " + e.getMessage());
+        }
     }
     
-    // --- MAIN METHOD UNTUK TEST KONEKSI (HANYA UNTUK TESTING) ---
-    // --- MAIN METHOD UNTUK TEST INSERT DATA ---
+    @Override
+    public Note getNoteById(int id) {
+        String sql = "SELECT * FROM notes WHERE id = ?";
+        Note note = null;
+
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            pstmt.setInt(1, id);
+            
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    note = new Note();
+                    note.setId(rs.getInt("id"));
+                    note.setTitle(rs.getString("title"));
+                    note.setContent(rs.getString("content"));
+                    note.setCategory(rs.getString("category"));
+                    
+                    Timestamp ts = rs.getTimestamp("deadline");
+                    if (ts != null) note.setDeadline(ts.toLocalDateTime());
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println(">>> ERROR GET ID: " + e.getMessage());
+        }
+        return note; // Bisa return null kalau gak ketemu
+    }
+           
 // --- MAIN METHOD UNTUK TEST BACA DATA ---
     public static void main(String[] args) {
         DatabaseManager db = new DatabaseManager();
