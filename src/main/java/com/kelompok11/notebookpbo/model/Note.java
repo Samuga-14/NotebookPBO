@@ -11,7 +11,7 @@ public class Note {
     private String title;
     private String content;
     private String category;
-    private LocalDateTime deadline; // Penting buat Reminder
+    private LocalDateTime deadline;     
     
     // Constructor Kosong (Wajib buat mapping database nanti)
     public Note() {}
@@ -40,10 +40,6 @@ public class Note {
     public LocalDateTime getDeadline() { return deadline; }
     public void setDeadline(LocalDateTime deadline) { this.deadline = deadline; }
     
-    @Override
-    public String toString() {
-        return title + " (" + category + ") - Deadline: " + deadline;
-    }
 }
 
 
