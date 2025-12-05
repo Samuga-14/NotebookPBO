@@ -4,25 +4,26 @@
 
 package com.kelompok11.notebookpbo;
 
-// Import yang wajib ada
+// Import semua pasukan kita
 import com.kelompok11.notebookpbo.database.DatabaseManager;
 import com.kelompok11.notebookpbo.service.NoteManager;
 import com.kelompok11.notebookpbo.model.Note;
-import com.kelompok11.notebookpbo.model.ReminderTask; // Import dari reminder exception 
+import com.kelompok11.notebookpbo.model.ReminderTask;
+import com.kelompok11.notebookpbo.model.Category; // Import Category Penjaga
 import com.kelompok11.notebookpbo.utils.TxtExporter;
-import com.kelompok11.notebookpbo.model.Category;
 
 import java.util.Scanner;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter; // Biar print tanggal rapi
 import java.util.List;
 
-public class NotebookPBO { // Nama Class HARUS SAMA dengan Nama File
+public class NotebookPBO { 
     
-    // Global variables
+    // --- GLOBAL VARIABLES ---
     private static NoteManager noteManager;
     private static Scanner scanner = new Scanner(System.in);
     
-    // menambah thread remindertask
+    // Satpam Thread (Static biar bisa diakses semua method)
     private static ReminderTask reminder;
 
     public static void main(String[] args) {
@@ -34,52 +35,50 @@ public class NotebookPBO { // Nama Class HARUS SAMA dengan Nama File
         noteManager = new NoteManager(dbManager);
 
         // 2. NYALAIN SATPAM (REMINDER THREAD)
-        reminder = new ReminderTask(noteManager); //berubah dari lokal variabel global karena sudah dideclare diatas
-        reminder.start(); // Jalankan thread di background
+        // Inisialisasi variabel global (JANGAN pake 'ReminderTask reminder =' lagi)
+        reminder = new ReminderTask(noteManager); 
+        reminder.start(); 
         
-        try {
-            Thread.sleep(500); 
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+        // Trik biar output gak tabrakan sama Thread Satpam
+        try { Thread.sleep(500); } catch (InterruptedException e) {}
+
         // 3. LOOP MENU UTAMA
         boolean isRunning = true;
         
         while (isRunning) {
             showMenu();
-            System.out.print("Pilih menu > ");
+            System.out.print("Pilih menu : ");
             String input = scanner.nextLine();
 
-            // Perhatikan struktur kurung kurawal di switch ini
             switch (input) {
                 case "1" -> menuAddNote();
                 case "2" -> menuShowNotes();
-                case "3" -> menuUpdateNote(); // <--- BARU
-                case "4" -> menuDeleteNote(); // <--- BARU
+                case "3" -> menuUpdateNote();
+                case "4" -> menuDeleteNote();
                 case "5" -> menuExportNotes();
                 case "0" -> {
-                    System.out.println("Sampai jumpa!");
-                    reminder.stopReminder(); // Matikan satpam
-                    isRunning = false;     // Matikan loop
+                    System.out.println("Sampai jumpa! ");
+                    if (reminder != null) reminder.stopReminder(); // Matikan satpam
+                    isRunning = false; 
                 }
-                default -> System.out.println(" Pilihan tidak ada. Coba lagi.");
+                default -> System.out.println("Pilihan Tidak Tersedia, silahkan Coba lagi.");
             }
         }
     }
 
-    // --- AREA METHOD TAMPILAN (DI LUAR MAIN, TAPI DI DALAM CLASS) ---
-
+    // --- TAMPILAN MENU ---
     private static void showMenu() {
-            System.out.println("\n=== NOTEBOOK PBO KELOMPOK 11 ===");
-            System.out.println("1. Tambah Catatan");
-            System.out.println("2. Lihat Semua Catatan");
-            System.out.println("3. Edit Catatan (Update)"); // <--- BARU
-            System.out.println("4. Hapus Catatan (Delete)"); // <--- BARU
-            System.out.println("5. Export ke File (TXT)");
-            System.out.println("0. Keluar");
-            System.out.println("===================================");
-        }
+        System.out.println("\n NOTEBOOK PBO KELOMPOK 11");
+        System.out.println("1. Tambah Catatan");
+        System.out.println("2. Lihat Semua Catatan");
+        System.out.println("3. Edit Catatan (Update)");
+        System.out.println("4. Hapus Catatan (Delete)");
+        System.out.println("5. Export ke File (TXT)");
+        System.out.println("0. Keluar");
+        System.out.println("");
+    }
 
+    // --- FITUR 1: TAMBAH CATATAN (CREATE) ---
     private static void menuAddNote() {
         System.out.println("\n--- Tambah Catatan ---");
         
@@ -89,7 +88,7 @@ public class NotebookPBO { // Nama Class HARUS SAMA dengan Nama File
         System.out.print("Isi      : ");
         String content = scanner.nextLine();
         
-        // --- MULAI PERUBAHAN INPUT KATEGORI ---
+        // Validasi Input Kategori (Paksa User Milih)
         String category = null;
         while (category == null) {
             Category.tampilkanPilihan();
@@ -99,121 +98,109 @@ public class NotebookPBO { // Nama Class HARUS SAMA dengan Nama File
                 category = Category.getKategori(pilihan);
                 
                 if (category == null) {
-                    System.out.println("Nomor tidak valid! Pilih yang ada di list saja.");
+                    System.out.println(" Nomor tidak valid! Silahkan memilih yang tersedia pada List. ");
                 }
             } catch (NumberFormatException e) {
-                System.out.println("Masukkan Angka !");
+                System.out.println(" Input yang diterima hanya berupa angka !");
             }
         }
-        System.out.println(">>> Kategori terpilih: " + category);
         
-        // Deadline diset 15 detik dari sekarang buat ngetes fitur Reminder
-        System.out.println("(Deadline otomatis diset 30 Menit dari sekarang untuk testing Reminder)");
-        LocalDateTime deadline = LocalDateTime.now().plusMinutes(30); 
+        // Set Deadline (Default 1 Jam dari sekarang)
+        System.out.println("(Deadline otomatis diset 1 Jam dari sekarang)");
+        LocalDateTime deadline = LocalDateTime.now().plusHours(1); 
 
         noteManager.addNote(title, content, category, deadline);
     }
 
+    // --- FITUR 2: LIHAT CATATAN (READ) ---
     private static void menuShowNotes() {
-        System.out.println("\n---  Daftar Catatan ---");
+        System.out.println("\n--- Daftar Catatan ---");
         List<Note> notes = noteManager.getNotes();
         
         if (notes.isEmpty()) {
-            System.out.println("Belum ada catatan. Silahkan isi terlebih dahulu");
+            System.out.println(" Catatan Masih Kosong. ");
         } else {
+            DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm");
             for (Note n : notes) {
+                String deadlineStr = (n.getDeadline() != null) ? n.getDeadline().format(fmt) : "-";
+                
                 System.out.println("[" + n.getId() + "] " + n.getTitle() + " (" + n.getCategory() + ")");
-                System.out.println("    Isi: " + n.getContent());
-                System.out.println("    Deadline: " + n.getDeadline());
+                System.out.println("    Isi      : " + n.getContent());
+                System.out.println("    Deadline : " + deadlineStr);
                 System.out.println("-------------------------");
             }
         }
     }
-    
-    private static void menuExportNotes() {
-        System.out.println("\n--- Export Data ke File ---");
-        
-        // 1. Ambil data dulu dari database
-        List<Note> notes = noteManager.getNotes();
-        
-        if (notes.isEmpty()) {
-            System.out.println(" Data masih kosong, tidak ada yang bisa diexport.");
-            return;
-        }
 
-        // 2. Siapkan Exporter
-        TxtExporter exporter = new TxtExporter();
-        
-        // 3. Eksekusi Export
-        // File bakal muncul di folder project lu (sejajar sama pom.xml)
-        exporter.export(notes, "backup_catatan.txt");
-    }
-    
-    // --- FITUR UPDATE ---
+    // --- FITUR 3: EDIT CATATAN (UPDATE) ---
     private static void menuUpdateNote() {
-        // 1. Pause dulu
+        // PAUSE SATPAM (Biar gak ganggu pas ngedit)
         if (reminder != null) reminder.pause();
         
         System.out.println("\n---️ Edit Catatan ---");
         menuShowNotes(); 
         
-        System.out.print("Masukkan ID catatan yang mau diedit: ");
+        System.out.print("Masukkan ID catatan yang ingin diedit: ");
         try {
             int id = Integer.parseInt(scanner.nextLine());
             
-            // Cek ID (Bisa throw IllegalArgumentException)
-            Note noteYangMauDiedit = noteManager.getNoteById(id); 
+            // Cek ID dulu (Bisa throw Exception kalo gak ketemu)
+            Note noteLama = noteManager.getNoteById(id); 
 
-            System.out.println(">>> Mengedit Catatan: " + noteYangMauDiedit.getTitle());
+            System.out.println(">>> Mengedit Catatan: " + noteLama.getTitle());
             
             System.out.print("Judul Baru    : ");
             String title = scanner.nextLine();
+            
             System.out.print("Isi Baru      : ");
             String content = scanner.nextLine();
-             // --- MULAI PERUBAHAN INPUT KATEGORI (EDIT) ---
+            
+            // Validasi Kategori Baru
             String category = null;
             while (category == null) {
-                System.out.println("\n[Ganti Kategori]");
+                System.out.println("[Ganti Kategori]");
                 Category.tampilkanPilihan();
                 System.out.print("Pilih Nomor Kategori Baru : ");
                 try {
                     int pilihan = Integer.parseInt(scanner.nextLine());
                     category = Category.getKategori(pilihan);
-                    
-                    if (category == null) System.out.println("⚠️ Nomor salah!");
+                    if (category == null) System.out.println(" Nomor salah!");
                 } catch (NumberFormatException e) {
-                    System.out.println("⚠️ Masukkan Angka bukan yang lain !");
+                    System.out.println("Inputan yang diterima hanyalah berupa angka !");
                 }
-            } 
+            }
             
+            // Reset deadline
             LocalDateTime deadline = LocalDateTime.now().plusHours(24); 
-            System.out.println("(Deadline direset jadi 24 jam dari sekarang)");
+            System.out.println("(Deadline diperpanjang 24 jam)");
 
             noteManager.updateNote(id, title, content, category, deadline);
             
         } catch (NumberFormatException e) {
             System.out.println("ID harus berupa angka!");
         } catch (IllegalArgumentException e) {
-            // INI YANG TADI HILANG DI MENU EDIT
-            System.out.println("❌ ERROR: " + e.getMessage());
+            System.out.println(" ERROR: " + e.getMessage());
         } finally {
-            // 2. WAJIB RESUME (Pake finally biar mau error atau sukses, satpam tetep bangun)
+            // WAJIB RESUME (Mau error atau sukses, satpam harus kerja lagi)
             if (reminder != null) reminder.resumeReminder();
         }
     }
 
-    // --- FITUR DELETE ---
+    // --- FITUR 4: HAPUS CATATAN (DELETE) ---
     private static void menuDeleteNote() {
         if (reminder != null) reminder.pause();
         
-        System.out.println("\n--- 🗑️ Hapus Catatan ---");
+        System.out.println("\n--- Hapus Catatan ---");
         menuShowNotes();
         
         System.out.print("Masukkan ID catatan yang mau dihapus: ");
         try {
             int id = Integer.parseInt(scanner.nextLine());
             
-            System.out.print("Yakin mau hapus ID " + id + "? (y/n): ");
+            // Validasi ID ada atau nggak
+            noteManager.getNoteById(id); // Cuma buat cek, gak perlu disimpen variabelnya
+            
+            System.out.print("Yakin ingin menghapus ID " + id + "? (y/n): ");
             String confirm = scanner.nextLine();
             
             if (confirm.equalsIgnoreCase("y")) {
@@ -223,12 +210,25 @@ public class NotebookPBO { // Nama Class HARUS SAMA dengan Nama File
             }
             
         } catch (NumberFormatException e) {
-            System.out.println("ID harus berupa angka!");
+            System.out.println(" ID harus berupa angka!");
         } catch (IllegalArgumentException e) {
-            System.out.println("ERROR: " + e.getMessage());
+            System.out.println(" ERROR: " + e.getMessage());
         } finally {
-            // 2. WAJIB RESUME DISINI JUGA
             if (reminder != null) reminder.resumeReminder();
         }
+    }
+    
+    // --- FITUR 5: EXPORT FILE (I/O) ---
+    private static void menuExportNotes() {
+        System.out.println("\n--- Export Data ke File ---");
+        List<Note> notes = noteManager.getNotes();
+        
+        if (notes.isEmpty()) {
+            System.out.println(" Data kosong, tidak ada catatan yang bisa diexport.");
+            return;
+        }
+
+        TxtExporter exporter = new TxtExporter();
+        exporter.export(notes, "catatanPBO.txt");
     }
 }

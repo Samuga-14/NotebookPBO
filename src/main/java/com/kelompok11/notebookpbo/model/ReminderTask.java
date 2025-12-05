@@ -23,7 +23,7 @@ public class ReminderTask extends Thread {
 
     @Override
     public void run() {
-        System.out.println(">>> [SYSTEM] Reminder sedang diaktifkan di Background...");
+        System.out.println("[SYSTEM] Reminder sedang diaktifkan di Background...");
         
         while (isRunning) {
             try {
@@ -49,7 +49,7 @@ public class ReminderTask extends Thread {
                             System.out.println("Deadline : " + n.getDeadline().format(formatter));
                             System.out.println("Segera Kerjakan tugas ini atau terima konsekuensi nya !");
                             System.out.println("========================================\n");
-                            System.out.print("Pilih menu > "); // Biar kursor input rapi lagi
+                            System.out.print("Pilih menu : "); // Biar kursor input rapi lagi
                         }
                     }
                 }
@@ -58,7 +58,7 @@ public class ReminderTask extends Thread {
                 Thread.sleep(5000); 
                 
             } catch (InterruptedException e) {
-                System.out.println(">>> [SYSTEM] Satpam Reminder Pulang.");
+                System.out.println("[SYSTEM] Reminder Pulang.");
                 break;
             }
         }

@@ -31,12 +31,19 @@ public class NoteManager {
         return noteDAO.getAllNotes();
     }
     
-    // Nanti kita tambah method update/delete/export disini// Method buat Edit
+    // Nanti kita tambah method update/delete/export disini
+    // Method buat Edit
     public void updateNote(int id, String title, String content, String category, java.time.LocalDateTime deadline) {
-        Note note = new Note(title, content, category, deadline);
-        note.setId(id); // Penting! Kita harus kasih tau ID mana yang mau diedit
-        noteDAO.updateNote(note);
-    }
+            // VALIDASI JUDUL JUGA DISINI (Biar gak kosong pas diedit)
+            if (title == null || title.isEmpty()) {
+                System.out.println("Judul catatan tidak boleh kosong!");
+                return;
+            }
+
+            Note note = new Note(title, content, category, deadline);
+            note.setId(id); 
+            noteDAO.updateNote(note);
+        }
 
     // Method buat Hapus
     public void deleteNote(int id) {

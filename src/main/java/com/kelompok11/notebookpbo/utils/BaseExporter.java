@@ -15,6 +15,6 @@ public abstract class BaseExporter {
     
     // Method biasa (bisa langsung dipake)
     protected void logSuccess(String fileName) {
-        System.out.println(">>> [FILE I/O] Sukses melakukan export data ke file: " + fileName);
+        System.out.println("[FILE I/O] Sukses melakukan export data ke file: " + fileName);
     }
 }

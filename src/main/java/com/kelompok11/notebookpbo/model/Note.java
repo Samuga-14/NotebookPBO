@@ -39,4 +39,11 @@ public class Note {
 
     public LocalDateTime getDeadline() { return deadline; }
     public void setDeadline(LocalDateTime deadline) { this.deadline = deadline; }
+    
+    @Override
+    public String toString() {
+        return title + " (" + category + ") - Deadline: " + deadline;
+    }
 }
+
+

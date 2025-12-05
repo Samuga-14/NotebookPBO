@@ -1,12 +1,6 @@
 === LAPORAN CATATAN HARIAN ===
 Total Catatan: 5
 ==============================
-ID       : 1
-Judul    : Tugas PBO
-Kategori : Tugas Kuliah
-Isi      : Kerjain database manager
-Deadline : 2025-12-01T15:19:30
-------------------------------
 ID       : 2
 Judul    : Tugas Jarkom
 Kategori : Tugas Kuliah 
@@ -30,4 +24,10 @@ Judul    : tes
 Kategori : tos
 Isi      : tus
 Deadline : 2025-12-03T11:29:50
+------------------------------
+ID       : 6
+Judul    : Proyek PBO
+Kategori : Tugas Kuliah
+Isi      : Membuat Proyek PBO Topik 3 dengan varian C
+Deadline : 2025-12-04T16:38:14
 ------------------------------

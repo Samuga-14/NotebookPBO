@@ -34,10 +34,10 @@ public class DatabaseManager implements NoteDAO {
             
             // Buka Pintu Koneksi
             connection = DriverManager.getConnection(URL, USER, PASSWORD);
-            System.out.println(">>> KONEKSI SUKSES: Berhasil terhubung ke Database!");
+            System.out.println(" KONEKSI SUKSES: Berhasil terhubung ke Database!");
             
         } catch (ClassNotFoundException | SQLException e) {
-            System.err.println(">>> KONEKSI GAGAL: " + e.getMessage());
+            System.err.println(" KONEKSI GAGAL: " + e.getMessage());
         }
     }
     
@@ -69,10 +69,10 @@ public class DatabaseManager implements NoteDAO {
             }
 
             pstmt.executeUpdate(); // Eksekusi kirim ke database
-            System.out.println(">>> BERHASIL: Catatan '" + note.getTitle() + "' tersimpan!");
+            System.out.println(" BERHASIL: Catatan '" + note.getTitle() + "' tersimpan!");
             
         } catch (SQLException e) {
-            System.err.println(">>> GAGAL SIMPAN: " + e.getMessage());
+            System.err.println(" GAGAL SIMPAN: " + e.getMessage());
         }
     }
 
@@ -104,7 +104,7 @@ public class DatabaseManager implements NoteDAO {
                 notes.add(note);
             }
         } catch (SQLException e) {
-            System.err.println(">>> GAGAL LOAD DATA: " + e.getMessage());
+            System.err.println(" GAGAL LOAD DATA: " + e.getMessage());
         }
         
         return notes; // Balikin daftar catatan ke pemanggil
@@ -129,13 +129,13 @@ public class DatabaseManager implements NoteDAO {
 
             int rowsUpdated = pstmt.executeUpdate();
             if (rowsUpdated > 0) {
-                System.out.println(">>> BERHASIL: Catatan ID " + note.getId() + " berhasil diupdate!");
+                System.out.println(" BERHASIL: Catatan ID " + note.getId() + " berhasil diupdate!");
             } else {
-                System.out.println(">>> GAGAL: ID tidak ditemukan.");
+                System.out.println(" GAGAL: ID tidak ditemukan.");
             }
             
         } catch (SQLException e) {
-            System.err.println(">>> ERROR UPDATE: " + e.getMessage());
+            System.err.println(" ERROR UPDATE: " + e.getMessage());
         }
     }
 
@@ -148,13 +148,13 @@ public class DatabaseManager implements NoteDAO {
 
             int rowsDeleted = pstmt.executeUpdate();
             if (rowsDeleted > 0) {
-                System.out.println(">>> BERHASIL: Catatan ID " + id + " berhasil dihapus!");
+                System.out.println(" BERHASIL: Catatan ID " + id + " berhasil dihapus!");
             } else {
-                System.out.println(">>> GAGAL: ID tidak ditemukan.");
+                System.out.println(" GAGAL: ID tidak ditemukan.");
             }
             
         } catch (SQLException e) {
-            System.err.println(">>> ERROR DELETE: " + e.getMessage());
+            System.err.println(" ERROR DELETE: " + e.getMessage());
         }
     }
     

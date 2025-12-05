@@ -17,11 +17,11 @@ public class TxtExporter extends BaseExporter {
         // Pake try-with-resources (biar file otomatis ditutup kalau udah kelar/error)
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(fileName))) {
             
-            writer.write("=== LAPORAN CATATAN HARIAN ===");
+            writer.write(" LAPORAN CATATAN HARIAN ANDA ");
             writer.newLine();
             writer.write("Total Catatan: " + notes.size());
             writer.newLine();
-            writer.write("==============================");
+            writer.write("-----------------------------------");
             writer.newLine();
             
             for (Note n : notes) {
@@ -39,11 +39,11 @@ public class TxtExporter extends BaseExporter {
                 writer.newLine();
             }
             
-            // Panggil method dari bapaknya (Abstract Class)
+            // Panggil method dari bapaknya(Abstract Class)
             super.logSuccess(fileName);
             
         } catch (IOException e) {
-            System.err.println(">>> GAGAL EXPORT FILE: " + e.getMessage());
+            System.err.println(" GAGAL EXPORT FILE: " + e.getMessage());
         }
     }
 }
