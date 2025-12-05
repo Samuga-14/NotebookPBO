@@ -4,231 +4,217 @@
 
 package com.kelompok11.notebookpbo;
 
-// Import semua pasukan kita
 import com.kelompok11.notebookpbo.database.DatabaseManager;
 import com.kelompok11.notebookpbo.service.NoteManager;
 import com.kelompok11.notebookpbo.model.Note;
 import com.kelompok11.notebookpbo.model.ReminderTask;
-import com.kelompok11.notebookpbo.model.Category; // Import Category Penjaga
 import com.kelompok11.notebookpbo.utils.TxtExporter;
 
-import java.util.Scanner;
+// Ganti Scanner dengan Swing
+import javax.swing.JOptionPane;
+import javax.swing.JScrollPane;
+import javax.swing.JTextArea;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter; // Biar print tanggal rapi
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 public class NotebookPBO { 
     
-    // --- GLOBAL VARIABLES ---
     private static NoteManager noteManager;
-    private static Scanner scanner = new Scanner(System.in);
+    // Scanner kita pensiunkan
     
-    // Satpam Thread (Static biar bisa diakses semua method)
+    // Satpam Thread
     private static ReminderTask reminder;
 
     public static void main(String[] args) {
-        // 1. SETUP KONEKSI DATABASE
+        // 1. SETUP DATABASE
         DatabaseManager dbManager = new DatabaseManager();
         dbManager.connect(); 
         
-        // Pasang Otak Aplikasi
         noteManager = new NoteManager(dbManager);
 
-        // 2. NYALAIN SATPAM (REMINDER THREAD)
-        // Inisialisasi variabel global (JANGAN pake 'ReminderTask reminder =' lagi)
+        // 2. NYALAIN SATPAM
         reminder = new ReminderTask(noteManager); 
         reminder.start(); 
         
-        // Trik biar output gak tabrakan sama Thread Satpam
-        try { Thread.sleep(500); } catch (InterruptedException e) {}
-
-        // 3. LOOP MENU UTAMA
+        // 3. LOOP MENU UTAMA (Versi GUI)
         boolean isRunning = true;
         
         while (isRunning) {
-            showMenu();
-            System.out.print("Pilih menu : ");
-            String input = scanner.nextLine();
+            // Pilihan Menu pake Tombol
+            String[] options = {"Tambah", "Lihat", "Edit", "Hapus", "Export", "Keluar"};
+            
+            int choice = JOptionPane.showOptionDialog(
+                null, 
+                "Selamat Datang di Notebook PBO Kelompok 11\nSilakan pilih menu:", 
+                "Menu Utama", 
+                JOptionPane.DEFAULT_OPTION, 
+                JOptionPane.PLAIN_MESSAGE, 
+                null, 
+                options, 
+                options[0]
+            );
 
-            switch (input) {
-                case "1" -> menuAddNote();
-                case "2" -> menuShowNotes();
-                case "3" -> menuUpdateNote();
-                case "4" -> menuDeleteNote();
-                case "5" -> menuExportNotes();
-                case "0" -> {
-                    System.out.println("Sampai jumpa! ");
-                    if (reminder != null) reminder.stopReminder(); // Matikan satpam
+            // Handle logic berdasarkan urutan tombol (array index)
+            switch (choice) {
+                case 0 -> menuAddNote();    // Tambah
+                case 1 -> menuShowNotes();  // Lihat
+                case 2 -> menuUpdateNote(); // Edit
+                case 3 -> menuDeleteNote(); // Hapus
+                case 4 -> menuExportNotes();// Export
+                case 5, -1 -> {             // Keluar atau tombol X (Close)
+                    JOptionPane.showMessageDialog(null, "Sampai jumpa! 👋");
+                    if (reminder != null) reminder.stopReminder();
                     isRunning = false; 
                 }
-                default -> System.out.println("Pilihan Tidak Tersedia, silahkan Coba lagi.");
             }
         }
     }
 
-    // --- TAMPILAN MENU ---
-    private static void showMenu() {
-        System.out.println("\n NOTEBOOK PBO KELOMPOK 11");
-        System.out.println("1. Tambah Catatan");
-        System.out.println("2. Lihat Semua Catatan");
-        System.out.println("3. Edit Catatan (Update)");
-        System.out.println("4. Hapus Catatan (Delete)");
-        System.out.println("5. Export ke File (TXT)");
-        System.out.println("0. Keluar");
-        System.out.println("");
-    }
-
-    // --- FITUR 1: TAMBAH CATATAN (CREATE) ---
+    // --- FITUR 1: TAMBAH CATATAN (GUI) ---
     private static void menuAddNote() {
-        System.out.println("\n--- Tambah Catatan ---");
+        // Input Judul
+        String title = JOptionPane.showInputDialog(null, "Masukkan Judul Catatan:");
+        if (title == null || title.trim().isEmpty()) return; // Cek kalau user klik Cancel
         
-        System.out.print("Judul    : ");
-        String title = scanner.nextLine();
+        // Input Isi
+        String content = JOptionPane.showInputDialog(null, "Masukkan Isi Catatan:");
+        if (content == null) content = "-"; // Default kalau kosong
         
-        System.out.print("Isi      : ");
-        String content = scanner.nextLine();
+        // Input Kategori (Pake Dropdown biar keren)
+        String[] kategories = {"Tugas Kuliah", "Pribadi", "Pekerjaan", "Ide Proyek", "Lain-lain"};
+        String category = (String) JOptionPane.showInputDialog(
+            null, 
+            "Pilih Kategori:", 
+            "Kategori", 
+            JOptionPane.QUESTION_MESSAGE, 
+            null, 
+            kategories, 
+            kategories[0]
+        );
+        if (category == null) return; // Kalau cancel
         
-        // Validasi Input Kategori (Paksa User Milih)
-        String category = null;
-        while (category == null) {
-            Category.tampilkanPilihan();
-            System.out.print("Pilih Nomor Kategori : ");
-            try {
-                int pilihan = Integer.parseInt(scanner.nextLine());
-                category = Category.getKategori(pilihan);
-                
-                if (category == null) {
-                    System.out.println(" Nomor tidak valid! Silahkan memilih yang tersedia pada List. ");
-                }
-            } catch (NumberFormatException e) {
-                System.out.println(" Input yang diterima hanya berupa angka !");
-            }
-        }
-        
-        // Set Deadline (Default 1 Jam dari sekarang)
-        System.out.println("(Deadline otomatis diset 1 Jam dari sekarang)");
-        LocalDateTime deadline = LocalDateTime.now().plusHours(1); 
+        // Deadline
+        JOptionPane.showMessageDialog(null, "Info: Deadline otomatis diset 1 Jam dari sekarang.");
+        LocalDateTime deadline = LocalDateTime.now().plusSeconds(10); 
 
         noteManager.addNote(title, content, category, deadline);
+        JOptionPane.showMessageDialog(null, "✅ Berhasil! Catatan disimpan.");
     }
 
-    // --- FITUR 2: LIHAT CATATAN (READ) ---
+    // --- FITUR 2: LIHAT CATATAN (GUI Scrollable) ---
     private static void menuShowNotes() {
-        System.out.println("\n--- Daftar Catatan ---");
         List<Note> notes = noteManager.getNotes();
         
         if (notes.isEmpty()) {
-            System.out.println(" Catatan Masih Kosong. ");
-        } else {
-            DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm");
-            for (Note n : notes) {
-                String deadlineStr = (n.getDeadline() != null) ? n.getDeadline().format(fmt) : "-";
-                
-                System.out.println("[" + n.getId() + "] " + n.getTitle() + " (" + n.getCategory() + ")");
-                System.out.println("    Isi      : " + n.getContent());
-                System.out.println("    Deadline : " + deadlineStr);
-                System.out.println("-------------------------");
-            }
+            JOptionPane.showMessageDialog(null, "📭 Belum ada catatan nih.");
+            return;
         }
+
+        // Kita rakit string panjang buat ditampilin
+        StringBuilder sb = new StringBuilder();
+        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm");
+        
+        for (Note n : notes) {
+            String deadlineStr = (n.getDeadline() != null) ? n.getDeadline().format(fmt) : "-";
+            sb.append("[").append(n.getId()).append("] ").append(n.getTitle())
+              .append(" (").append(n.getCategory()).append(")\n")
+              .append("    Isi      : ").append(n.getContent()).append("\n")
+              .append("    Deadline : ").append(deadlineStr).append("\n")
+              .append("-------------------------\n");
+        }
+
+        // Tampilkan pake TextArea biar bisa discroll kalau panjang
+        JTextArea textArea = new JTextArea(sb.toString());
+        textArea.setEditable(false);
+        JScrollPane scrollPane = new JScrollPane(textArea);
+        scrollPane.setPreferredSize(new java.awt.Dimension(400, 300));
+        
+        JOptionPane.showMessageDialog(null, scrollPane, "Daftar Catatan", JOptionPane.INFORMATION_MESSAGE);
     }
 
-    // --- FITUR 3: EDIT CATATAN (UPDATE) ---
+    // --- FITUR 3: EDIT CATATAN (GUI) ---
     private static void menuUpdateNote() {
-        // PAUSE SATPAM (Biar gak ganggu pas ngedit)
-        if (reminder != null) reminder.pause();
+        if (reminder != null) reminder.pause(); // Tetap pause thread biar aman
         
-        System.out.println("\n---️ Edit Catatan ---");
-        menuShowNotes(); 
-        
-        System.out.print("Masukkan ID catatan yang ingin diedit: ");
         try {
-            int id = Integer.parseInt(scanner.nextLine());
+            // Minta ID
+            String idStr = JOptionPane.showInputDialog("Masukkan ID Catatan yang mau diedit:");
+            if (idStr == null) return; // Cancel
             
-            // Cek ID dulu (Bisa throw Exception kalo gak ketemu)
+            int id = Integer.parseInt(idStr);
+            
+            // Cek ID ada gak (Pake logic yang udah kita buat)
             Note noteLama = noteManager.getNoteById(id); 
+            
+            // Kalau ketemu, minta data baru
+            String title = JOptionPane.showInputDialog("Judul Baru:", noteLama.getTitle());
+            if (title == null) return;
 
-            System.out.println(">>> Mengedit Catatan: " + noteLama.getTitle());
+            String content = JOptionPane.showInputDialog("Isi Baru:", noteLama.getContent());
+            if (content == null) content = "-";
             
-            System.out.print("Judul Baru    : ");
-            String title = scanner.nextLine();
-            
-            System.out.print("Isi Baru      : ");
-            String content = scanner.nextLine();
-            
-            // Validasi Kategori Baru
-            String category = null;
-            while (category == null) {
-                System.out.println("[Ganti Kategori]");
-                Category.tampilkanPilihan();
-                System.out.print("Pilih Nomor Kategori Baru : ");
-                try {
-                    int pilihan = Integer.parseInt(scanner.nextLine());
-                    category = Category.getKategori(pilihan);
-                    if (category == null) System.out.println(" Nomor salah!");
-                } catch (NumberFormatException e) {
-                    System.out.println("Inputan yang diterima hanyalah berupa angka !");
-                }
-            }
-            
-            // Reset deadline
+            // Dropdown lagi buat edit
+            String[] kategories = {"Tugas Kuliah", "Pribadi", "Pekerjaan", "Ide Proyek", "Lain-lain"};
+            String category = (String) JOptionPane.showInputDialog(
+                null, "Pilih Kategori Baru:", "Edit Kategori", 
+                JOptionPane.QUESTION_MESSAGE, null, kategories, noteLama.getCategory()
+            );
+            if (category == null) return;
+
             LocalDateTime deadline = LocalDateTime.now().plusHours(24); 
-            System.out.println("(Deadline diperpanjang 24 jam)");
-
+            
             noteManager.updateNote(id, title, content, category, deadline);
+            JOptionPane.showMessageDialog(null, "✅ Data berhasil diupdate!");
             
         } catch (NumberFormatException e) {
-            System.out.println("ID harus berupa angka!");
+            JOptionPane.showMessageDialog(null, "⚠ ID harus angka!", "Error", JOptionPane.ERROR_MESSAGE);
         } catch (IllegalArgumentException e) {
-            System.out.println(" ERROR: " + e.getMessage());
+            JOptionPane.showMessageDialog(null, "❌ " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         } finally {
-            // WAJIB RESUME (Mau error atau sukses, satpam harus kerja lagi)
-            if (reminder != null) reminder.resumeReminder();
+            if (reminder != null) reminder.resumeReminder(); // Resume
         }
     }
 
-    // --- FITUR 4: HAPUS CATATAN (DELETE) ---
+    // --- FITUR 4: HAPUS CATATAN (GUI) ---
     private static void menuDeleteNote() {
         if (reminder != null) reminder.pause();
         
-        System.out.println("\n--- Hapus Catatan ---");
-        menuShowNotes();
-        
-        System.out.print("Masukkan ID catatan yang mau dihapus: ");
         try {
-            int id = Integer.parseInt(scanner.nextLine());
+            String idStr = JOptionPane.showInputDialog("Masukkan ID Catatan yang mau dihapus:");
+            if (idStr == null) return;
             
-            // Validasi ID ada atau nggak
-            noteManager.getNoteById(id); // Cuma buat cek, gak perlu disimpen variabelnya
+            int id = Integer.parseInt(idStr);
+            noteManager.getNoteById(id); // Cek eksistensi
             
-            System.out.print("Yakin ingin menghapus ID " + id + "? (y/n): ");
-            String confirm = scanner.nextLine();
+            // Konfirmasi Yes/No
+            int confirm = JOptionPane.showConfirmDialog(null, 
+                    "Yakin mau hapus ID " + id + "?", "Konfirmasi", JOptionPane.YES_NO_OPTION);
             
-            if (confirm.equalsIgnoreCase("y")) {
+            if (confirm == JOptionPane.YES_OPTION) {
                 noteManager.deleteNote(id);
-            } else {
-                System.out.println("Batal hapus.");
+                JOptionPane.showMessageDialog(null, "🗑 Data dihapus.");
             }
             
         } catch (NumberFormatException e) {
-            System.out.println(" ID harus berupa angka!");
+            JOptionPane.showMessageDialog(null, "⚠ ID harus angka!", "Error", JOptionPane.ERROR_MESSAGE);
         } catch (IllegalArgumentException e) {
-            System.out.println(" ERROR: " + e.getMessage());
+            JOptionPane.showMessageDialog(null, "❌ " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         } finally {
             if (reminder != null) reminder.resumeReminder();
         }
     }
     
-    // --- FITUR 5: EXPORT FILE (I/O) ---
+    // --- FITUR 5: EXPORT (GUI) ---
     private static void menuExportNotes() {
-        System.out.println("\n--- Export Data ke File ---");
         List<Note> notes = noteManager.getNotes();
-        
         if (notes.isEmpty()) {
-            System.out.println(" Data kosong, tidak ada catatan yang bisa diexport.");
+            JOptionPane.showMessageDialog(null, "📭 Data kosong, gak bisa export.");
             return;
         }
 
         TxtExporter exporter = new TxtExporter();
-        exporter.export(notes, "catatanPBO.txt");
+        exporter.export(notes, "backup_catatan.txt");
+        JOptionPane.showMessageDialog(null, "💾 Sukses! File tersimpan sebagai 'backup_catatan.txt'");
     }
 }
